@@ -1,10 +1,24 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
-	"strings"
 )
+
+func getLinesChannel(f io.ReadCloser) <-chan string {
+	ch := make(chan string)
+	go func() {
+		defer f.Close()
+		defer close(ch)
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			ch <- scanner.Text()
+		}
+	}()
+	return ch
+}
 
 func main() {
 	file, err := os.Open("messages.txt")
@@ -12,30 +26,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	defer file.Close()
 
-	buffer := make([]byte, 8)
-	currentLine := ""
-	for {
-		n, err := file.Read(buffer)
-		if err != nil && err.Error() != "EOF" {
-			fmt.Println(err)
-			return
-		}
-		if n == 0 {
-			break
-		}
-		currentString := string(buffer[:n])
-		if strings.Contains(currentString, "\n") {
-			parts := strings.Split(currentString, "\n")
-			currentLine += parts[0]
-			fmt.Printf("read: %s\n", currentLine)
-			currentLine = ""
-			currentString = parts[1]
-		}
-		currentLine += currentString
-	}
-	if currentLine != "" {
-		fmt.Printf("read: %s\n", currentLine)
+	for line := range getLinesChannel(file) {
+		fmt.Printf("read: %s\n", line)
 	}
 }
