@@ -3,16 +3,15 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
-	"os"
+	"net"
 )
 
-func getLinesChannel(f io.ReadCloser) <-chan string {
+func getLinesChannel(c net.Conn) <-chan string {
 	ch := make(chan string)
 	go func() {
-		defer f.Close()
+		defer c.Close()
 		defer close(ch)
-		scanner := bufio.NewScanner(f)
+		scanner := bufio.NewScanner(c)
 		for scanner.Scan() {
 			ch <- scanner.Text()
 		}
@@ -21,13 +20,20 @@ func getLinesChannel(f io.ReadCloser) <-chan string {
 }
 
 func main() {
-	file, err := os.Open("messages.txt")
+	listener, err := net.Listen("tcp", ":42069")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+	conn, err := listener.Accept()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer conn.Close()
+	fmt.Println("Connection accepted")
 
-	for line := range getLinesChannel(file) {
-		fmt.Printf("read: %s\n", line)
+	for line := range getLinesChannel(conn) {
+		fmt.Println(line)
 	}
 }
