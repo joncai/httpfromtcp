@@ -1,23 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"net"
-)
 
-func getLinesChannel(c net.Conn) <-chan string {
-	ch := make(chan string)
-	go func() {
-		defer c.Close()
-		defer close(ch)
-		scanner := bufio.NewScanner(c)
-		for scanner.Scan() {
-			ch <- scanner.Text()
-		}
-	}()
-	return ch
-}
+	"httpfromtcp/internal/request"
+)
 
 func main() {
 	listener, err := net.Listen("tcp", ":42069")
@@ -33,7 +21,13 @@ func main() {
 	defer conn.Close()
 	fmt.Println("Connection accepted")
 
-	for line := range getLinesChannel(conn) {
-		fmt.Println(line)
+	r, err := request.RequestFromReader(conn)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
+	fmt.Println("Request line:")
+	fmt.Println("- Method:", r.RequestLine.Method)
+	fmt.Println("- Target:", r.RequestLine.RequestTarget)
+	fmt.Println("- Version:", r.RequestLine.HttpVersion)
 }
