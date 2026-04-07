@@ -60,6 +60,16 @@ func TestHeadersParse(t *testing.T) {
 	assert.Equal(t, 20, n)
 	assert.True(t, done)
 
+	// Test: Same header key again merges values (comma-separated)
+	headers = NewHeaders()
+	headers["x-test"] = "first-value"
+	data = []byte("X-Test: second-value\r\n\r\n")
+	n, done, err = headers.Parse(data)
+	require.NoError(t, err)
+	assert.Equal(t, "first-value, second-value", headers["x-test"])
+	assert.Equal(t, 22, n)
+	assert.True(t, done)
+
 	// Test: Valid done
 	headers = NewHeaders()
 	data = []byte("HoSt: localhost:42069\r\n\r\n")

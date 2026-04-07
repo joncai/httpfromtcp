@@ -59,7 +59,11 @@ func (h Headers) Parse(data []byte) (n int, done bool, err error) {
 
 	name := strings.ToLower(string(line[:colon]))
 	value := string(bytes.TrimSpace(line[colon+1:]))
-	h[name] = value
+	if existing, ok := h[name]; ok && existing != "" {
+		h[name] = existing + ", " + value
+	} else {
+		h[name] = value
+	}
 
 	done = len(data) >= n+2 && data[n] == '\r' && data[n+1] == '\n'
 	return n, done, nil
